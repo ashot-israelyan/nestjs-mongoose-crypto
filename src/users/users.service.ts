@@ -3,11 +3,13 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { CreateUserRequest } from './dto/request/create-user-request.dto';
 import { User } from './models/User';
 import { hash, compare } from 'bcrypt';
 import { UserResponse } from './dto/response/user-response.dto';
+import { CoinbaseAuth } from './models/CoinbaseAuth';
 
 @Injectable()
 export class UsersService {
@@ -57,6 +59,22 @@ export class UsersService {
     }
 
     return this.buildResponse(user);
+  }
+
+  async getCoinBaseAuth(userId: string): Promise<CoinbaseAuth> {
+    const user = await this.usersRepository.findOneById(userId);
+
+    if (!user) {
+      throw new NotFoundException('User not found by _id', userId);
+    }
+
+    if (!user.coinbaseAuth) {
+      throw new UnauthorizedException(
+        `User with _id ${userId} has not authorized Coinbase.`,
+      );
+    }
+
+    return user.coinbaseAuth;
   }
 
   private async validateCreateUserRequest(
